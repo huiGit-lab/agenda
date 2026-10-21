@@ -183,7 +183,7 @@ input,select{font-size:16px}
   </form>
 </div>
 
-<script src="config.js"></script>
+<script src="config.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
@@ -275,7 +275,7 @@ $('#loginForm').addEventListener('submit', async e => {
     const m = error.message || '';
     $('#loginErr').textContent = /invalid login credentials/i.test(m)
       ? 'Email o contraseña incorrectos (Supabase: "' + m + '").'
-      : 'Error: ' + m + (error.status ? ' (código ' + error.status + ')' : '');
+      : 'Error: ' + m + (error.status ? ' (código ' + error.status + ')' : '') + ' · URL usada: ' + (window.__baseUrl || '?');
   }
 });
 $('#logout').addEventListener('click', async () => { if (sb) await sb.auth.signOut(); });
@@ -477,7 +477,11 @@ $('#btnDel').onclick = async () => {
 /* ---------- arranque ---------- */
 async function start(){
   if (!configured || !window.supabase){ showLogin(); return; }
-  sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  // Si la URL lleva algo detrás del dominio (p. ej. /rest/v1/), nos quedamos solo con el dominio
+  let baseUrl = String(cfg.SUPABASE_URL).trim();
+  try { baseUrl = new URL(baseUrl).origin; } catch(e){}
+  sb = window.supabase.createClient(baseUrl, String(cfg.SUPABASE_KEY).trim());
+  window.__baseUrl = baseUrl;
   sb.auth.onAuthStateChange((ev, session) => { session ? showApp() : showLogin(); if (session) setTimeout(scrollToWork, 100); });
   const { data } = await sb.auth.getSession();
   if (!data.session) showLogin();
