@@ -270,7 +270,13 @@ $('#loginForm').addEventListener('submit', async e => {
   $('#loginErr').textContent = '';
   if (!configured){ $('#loginErr').textContent = 'Falta configurar config.js'; return; }
   const { error } = await sb.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#pass').value });
-  if (error) $('#loginErr').textContent = 'Email o contraseña incorrectos.';
+  if (error){
+    console.error(error);
+    const m = error.message || '';
+    $('#loginErr').textContent = /invalid login credentials/i.test(m)
+      ? 'Email o contraseña incorrectos (Supabase: "' + m + '").'
+      : 'Error: ' + m + (error.status ? ' (código ' + error.status + ')' : '');
+  }
 });
 $('#logout').addEventListener('click', async () => { if (sb) await sb.auth.signOut(); });
 
