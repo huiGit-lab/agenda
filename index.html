@@ -14,8 +14,8 @@
 <style>
 :root{
   --bg:#f3ebe0; --card:#fffdf9; --line:#e6dccd; --text:#2b2620; --muted:#8a7f70; --accent:#2b2620;
-  --pablo:#2563eb; --pablo-bg:#dbe8ff;
-  --andrea:#db2777; --andrea-bg:#fde0ee;
+  --pablo:#7c3aed; --pablo-bg:#e9defc;
+  --andrea:#2563eb; --andrea-bg:#dbe8ff;
   --ambos:#15803d; --ambos-bg:#d9f2e0;
   --H:46px;
 }
@@ -69,8 +69,8 @@ input,select{font-size:16px}
 .ev.ambos{--c:var(--ambos);--bg-c:var(--ambos-bg)}
 .ev b{display:block;font-weight:600;word-break:break-word}
 .ev i{display:block;font-style:normal;font-size:10px;opacity:.75}
-.day-mode .ev{font-size:13px;padding:3px 8px}
-.day-mode .ev i{font-size:11px}
+.day-mode .ev{font-size:14px;padding:4px 8px}
+.day-mode .ev i{font-size:12px}
 .nowline{position:absolute;left:0;right:0;height:0;border-top:2px solid #ef4444;z-index:3;pointer-events:none}
 .nowline::before{content:"";position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:#ef4444}
 .legend{display:flex;gap:14px;justify-content:center;padding:7px 0 9px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
@@ -260,13 +260,7 @@ let sb = null, events = [], anchor = new Date(), editing = null;
 let view = 'week';
 try { view = localStorage.getItem('agenda_view') || 'week'; } catch(e){}
 const START_H = 6, END_H = 23;   // la rejilla va de 06:00 a 23:00
-let HH = 46;                      // alto en px de cada hora (se ajusta para que el día quepa en pantalla)
-const H = () => HH;
-function fitHeight(){
-  const avail = $('#scroll').clientHeight - 10;        // 10 = padding inferior del contenedor
-  if (avail > 150) HH = Math.floor(Math.max(24, Math.min(avail/(END_H-START_H), 64)));
-  document.documentElement.style.setProperty('--H', HH+'px');
-}
+const H = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--H')) || 46;
 
 /* ---------- auth ---------- */
 function showLogin(){ $('#login').classList.remove('hidden'); $('#app').classList.add('hidden'); $('#cfgwarn').classList.toggle('hidden', !!configured); }
@@ -304,7 +298,6 @@ function rangeDays(){
 }
 
 function render(){
-  fitHeight();
   const days = rangeDays(), n = days.length, h = H(), todayS = ymd(new Date());
   $('#vDay').classList.toggle('on', view==='day');
   $('#vWeek').classList.toggle('on', view==='week');
@@ -341,7 +334,7 @@ function render(){
       const vs = Math.max(it.start, S), ve = Math.min(it.end, E);
       const top = (vs-S)*h/60, height = Math.max((ve-vs)*h/60, 20);
       const w = 100/it.n, left = it.col*w;
-      const long = height >= (view==='day' ? 38 : 28);
+      const long = height >= 34;
       return `<div class="ev ${it.ev.owner}" data-id="${it.ev.id}" style="top:${top}px;height:${height-1}px;left:calc(${left}% + 1px);width:calc(${w}% - 2px)">
         <b>${esc(it.ev.title)}</b>${long?`<i>${hhmm(it.ev.start_time)}–${hhmm(it.ev.end_time)}</i>`:''}</div>`;
     }).join('');
@@ -499,7 +492,6 @@ async function start(){
   const { data } = await sb.auth.getSession();
   if (!data.session) showLogin();
 }
-let rzT; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { if (sb && !$('#app').classList.contains('hidden')) render(); }, 150); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && sb && !$('#app').classList.contains('hidden')) load(); });
 setInterval(() => { if (sb && !$('#app').classList.contains('hidden') && !document.hidden) render(); }, 60000);
 if (typeof document !== 'undefined' && !window.__TEST__) start();
