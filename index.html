@@ -54,7 +54,7 @@ input,select{font-size:16px}
 .heads .hd small{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .heads .hd b{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:13px;font-size:15px;margin-top:1px}
 .heads .hd.today b{background:var(--accent);color:#fff}
-.scroll{flex:1;overflow-y:auto;position:relative;-webkit-overflow-scrolling:touch}
+.scroll{flex:1;overflow-y:auto;position:relative;-webkit-overflow-scrolling:touch;padding-bottom:10px}
 .grid{position:relative;display:flex}
 .gutter{width:34px;flex:none;position:relative}
 .gutter span{position:absolute;right:4px;font-size:10px;color:var(--muted);transform:translateY(-50%)}
@@ -259,6 +259,7 @@ const configured = cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('PEGA_AQUI');
 let sb = null, events = [], anchor = new Date(), editing = null;
 let view = 'week';
 try { view = localStorage.getItem('agenda_view') || 'week'; } catch(e){}
+const START_H = 6, END_H = 23;   // la rejilla va de 06:00 a 23:00
 const H = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--H')) || 46;
 
 /* ---------- auth ---------- */
@@ -320,32 +321,36 @@ function render(){
 
   // rejilla
   let gutter = '';
-  for (let i=1;i<24;i++) gutter += `<span style="top:${i*h}px">${i}:00</span>`;
+  for (let i=START_H+1;i<=END_H;i++) gutter += `<span style="top:${(i-START_H)*h}px">${i}:00</span>`;
   let cols = '';
   days.forEach(d => {
     const s = ymd(d);
-    const items = events.filter(e => occurs(e, s)).map(e => ({ev:e, start:toMin(e.start_time), end:toMin(e.end_time)}));
+    const S = START_H*60, E = END_H*60;
+    const items = events.filter(e => occurs(e, s))
+      .map(e => ({ev:e, start:toMin(e.start_time), end:toMin(e.end_time)}))
+      .filter(it => it.end > S && it.start < E);   // fuera de 06–23 no se dibuja
     layout(items);
     let inner = items.map(it => {
-      const top = it.start*h/60, height = Math.max((it.end-it.start)*h/60, 20);
+      const vs = Math.max(it.start, S), ve = Math.min(it.end, E);
+      const top = (vs-S)*h/60, height = Math.max((ve-vs)*h/60, 20);
       const w = 100/it.n, left = it.col*w;
       const long = height >= 34;
       return `<div class="ev ${it.ev.owner}" data-id="${it.ev.id}" style="top:${top}px;height:${height-1}px;left:calc(${left}% + 1px);width:calc(${w}% - 2px)">
         <b>${esc(it.ev.title)}</b>${long?`<i>${hhmm(it.ev.start_time)}–${hhmm(it.ev.end_time)}</i>`:''}</div>`;
     }).join('');
     if (s===todayS){
-      const now = new Date(), top = (now.getHours()*60+now.getMinutes())*h/60;
-      inner += `<div class="nowline" style="top:${top}px"></div>`;
+      const now = new Date(), nm = now.getHours()*60+now.getMinutes();
+      if (nm >= S && nm <= E) inner += `<div class="nowline" style="top:${(nm-S)*h/60}px"></div>`;
     }
     cols += `<div class="col ${s===todayS?'today':''}" data-date="${s}">${inner}</div>`;
   });
-  $('#grid').style.height = (24*h)+'px';
+  $('#grid').style.height = ((END_H-START_H)*h)+'px';
   $('#grid').innerHTML = `<div class="gutter">${gutter}</div><div class="cols" style="grid-template-columns:repeat(${n},1fr)">${cols}</div>`;
 }
 
 function scrollToWork(){
   const h = H(), now = new Date();
-  const target = (anchorIsCurrent() ? Math.max(now.getHours()-2, 0) : 7) * h;
+  const target = anchorIsCurrent() ? (Math.min(Math.max(now.getHours()-2, START_H), END_H-8) - START_H) * h : 0;
   $('#scroll').scrollTop = target;
 }
 const anchorIsCurrent = () => {
@@ -384,12 +389,12 @@ $('#grid').addEventListener('click', e => {
   const evEl = e.target.closest('.ev');
   if (evEl){ const ev = events.find(x => x.id === evEl.dataset.id); if (ev) openForm(ev); return; }
   const col = e.target.closest('.col'); if (!col) return;
-  const y = e.clientY - col.getBoundingClientRect().top, hour = Math.min(Math.floor(y/H()), 22);
+  const y = e.clientY - col.getBoundingClientRect().top, hour = Math.min(START_H + Math.floor(y/H()), END_H-1);
   openForm(null, {date: col.dataset.date, start: pad(hour)+':00', end: pad(hour+1)+':00'});
 });
 $('#fab').onclick = () => {
   const d = view==='day' ? anchor : (anchorIsCurrent() ? new Date() : mondayOf(anchor));
-  const h = Math.min(new Date().getHours()+1, 22);
+  const h = Math.min(Math.max(new Date().getHours()+1, START_H), END_H-1);
   openForm(null, {date: ymd(d), start: pad(h)+':00', end: pad(h+1)+':00'});
 };
 
@@ -451,6 +456,7 @@ $('#form').addEventListener('submit', async e => {
   if (!title) return ($('#formErr').textContent = 'Pon un título.');
   if (!date || !st || !en) return ($('#formErr').textContent = 'Completa fecha y horas.');
   if (toMin(en) <= toMin(st)) return ($('#formErr').textContent = 'La hora de fin debe ser posterior a la de inicio.');
+  if (toMin(st) < START_H*60 || toMin(en) > END_H*60) return ($('#formErr').textContent = 'El horario va de '+pad(START_H)+':00 a '+END_H+':00.');
   if (freq!=='none' && until && until < date) return ($('#formErr').textContent = 'La fecha final no puede ser anterior al inicio.');
   const rec = {
     title, owner: formWho, start_date: date, start_time: st, end_time: en, freq,
