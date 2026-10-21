@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Agenda">
+<meta name="theme-color" content="#f3ebe0">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Agenda</title>
+<style>
+:root{
+  --bg:#f3ebe0; --card:#fffdf9; --line:#e6dccd; --text:#2b2620; --muted:#8a7f70; --accent:#2b2620;
+  --pablo:#2563eb; --pablo-bg:#dbe8ff;
+  --andrea:#db2777; --andrea-bg:#fde0ee;
+  --ambos:#15803d; --ambos-bg:#d9f2e0;
+  --H:46px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  overscroll-behavior:none}
+button,input,select{font:inherit;color:inherit}
+input,select{font-size:16px}
+.hidden{display:none!important}
+
+/* LOGIN */
+#login{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-card{background:var(--card);border-radius:24px;padding:28px;width:100%;max-width:360px;box-shadow:0 8px 30px rgba(60,40,10,.08)}
+.login-card h1{margin:0 0 4px;font-size:26px}
+.login-card p{margin:0 0 20px;color:var(--muted);font-size:14px}
+.login-card label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+.login-card input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#fff}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--accent);color:#fff;width:100%;margin-top:18px}
+.err{color:#b91c1c;font-size:13px;margin-top:10px;min-height:16px}
+
+/* APP */
+#app{height:100dvh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+.top{display:flex;align-items:center;gap:8px;padding:10px 12px 8px}
+.top .title{flex:1;font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:38px;height:38px;border-radius:12px;border:0;background:var(--card);display:grid;place-items:center;font-size:18px;cursor:pointer;box-shadow:0 1px 2px rgba(60,40,10,.08)}
+.pill{height:38px;padding:0 12px;border-radius:12px;border:0;background:var(--card);font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 1px 2px rgba(60,40,10,.08)}
+.seg{display:flex;background:var(--card);border-radius:12px;padding:3px;box-shadow:0 1px 2px rgba(60,40,10,.08)}
+.seg button{border:0;background:transparent;border-radius:9px;height:32px;padding:0 10px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.cal{flex:1;min-height:0;display:flex;flex-direction:column;margin:0 8px 8px;background:var(--card);border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(60,40,10,.06)}
+.heads{display:flex;border-bottom:1px solid var(--line);padding-right:0}
+.heads .gut{width:34px;flex:none}
+.heads .hd{flex:1;text-align:center;padding:6px 0 7px;cursor:pointer;min-width:0}
+.heads .hd small{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.heads .hd b{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:13px;font-size:15px;margin-top:1px}
+.heads .hd.today b{background:var(--accent);color:#fff}
+.scroll{flex:1;overflow-y:auto;position:relative;-webkit-overflow-scrolling:touch}
+.grid{position:relative;display:flex}
+.gutter{width:34px;flex:none;position:relative}
+.gutter span{position:absolute;right:4px;font-size:10px;color:var(--muted);transform:translateY(-50%)}
+.cols{flex:1;display:grid}
+.col{position:relative;border-left:1px solid var(--line);
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--H) - 1px),var(--line) calc(var(--H) - 1px),var(--line) var(--H))}
+.col.today{background-color:#fbf6ec}
+.ev{position:absolute;border-radius:6px;padding:2px 4px;overflow:hidden;font-size:11px;line-height:1.2;
+  background:var(--bg-c);border-left:3px solid var(--c);color:var(--text);cursor:pointer}
+.ev.pablo{--c:var(--pablo);--bg-c:var(--pablo-bg)}
+.ev.andrea{--c:var(--andrea);--bg-c:var(--andrea-bg)}
+.ev.ambos{--c:var(--ambos);--bg-c:var(--ambos-bg)}
+.ev b{display:block;font-weight:600;word-break:break-word}
+.ev i{display:block;font-style:normal;font-size:10px;opacity:.75}
+.day-mode .ev{font-size:14px;padding:4px 8px}
+.day-mode .ev i{font-size:12px}
+.nowline{position:absolute;left:0;right:0;height:0;border-top:2px solid #ef4444;z-index:3;pointer-events:none}
+.nowline::before{content:"";position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:#ef4444}
+.legend{display:flex;gap:14px;justify-content:center;padding:7px 0 9px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+.legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;background:var(--c)}
+.legend .p{--c:var(--pablo)}.legend .a{--c:var(--andrea)}.legend .b{--c:var(--ambos)}
+.fab{position:fixed;right:18px;bottom:calc(66px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:27px;border:0;background:var(--accent);color:#fff;font-size:28px;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer;z-index:10}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(30,20,5,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:92dvh;overflow-y:auto}
+@media(min-width:600px){.overlay{align-items:center}.sheet{border-radius:24px}}
+.sheet h2{margin:0 0 12px;font-size:18px}
+.sheet label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+.sheet input[type=text],.sheet input[type=date],.sheet input[type=time],.sheet input[type=number],.sheet select{
+  width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;min-height:44px}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:2px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px;cursor:pointer}
+.chip.pablo.on{border-color:var(--pablo);background:var(--pablo-bg)}
+.chip.andrea.on{border-color:var(--andrea);background:var(--andrea-bg)}
+.chip.ambos.on{border-color:var(--ambos);background:var(--ambos-bg)}
+.chip.wd{padding:8px 0;width:38px;text-align:center;border-radius:12px}
+.chip.wd.on{border-color:var(--accent);background:var(--accent);color:#fff}
+.every{display:flex;align-items:center;gap:8px;font-size:15px}
+.every input{width:70px!important}
+.actions{display:flex;gap:10px;margin-top:20px}
+.actions .btn{flex:1}
+.btn.save{background:var(--accent);color:#fff}
+.btn.ghost{background:#efe7da}
+.btn.del{background:#fee2e2;color:#b91c1c;flex:none;padding:12px 16px}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+.warn{background:#fff4d6;border-radius:12px;padding:12px;font-size:14px;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<div id="login" class="hidden">
+  <form class="login-card" id="loginForm">
+    <h1>Agenda</h1>
+    <p>Pablo &amp; Andrea</p>
+    <div id="cfgwarn" class="warn hidden">Falta configurar config.js (ver la guía).</div>
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username" required>
+    <label for="pass">Contraseña</label>
+    <input id="pass" type="password" autocomplete="current-password" required>
+    <button class="btn primary" type="submit">Entrar</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <div class="top">
+    <button class="ib" id="prev" aria-label="Anterior">‹</button>
+    <button class="ib" id="next" aria-label="Siguiente">›</button>
+    <div class="title" id="title"></div>
+    <button class="pill" id="today">Hoy</button>
+    <div class="seg"><button id="vDay">Día</button><button id="vWeek">Semana</button></div>
+    <button class="ib" id="logout" aria-label="Salir" title="Cerrar sesión">⎋</button>
+  </div>
+  <div class="cal" id="cal">
+    <div class="heads" id="heads"></div>
+    <div class="scroll" id="scroll"><div class="grid" id="grid"></div></div>
+    <div class="legend"><span class="p">Pablo</span><span class="a">Andrea</span><span class="b">Ambos</span></div>
+  </div>
+  <button class="fab" id="fab" aria-label="Nuevo evento">+</button>
+</div>
+
+<div id="overlay" class="overlay hidden">
+  <form class="sheet" id="form">
+    <h2 id="formTitle">Nuevo evento</h2>
+    <label for="f-title">Título</label>
+    <input id="f-title" type="text" maxlength="120" required autocomplete="off">
+    <label>¿A quién afecta?</label>
+    <div class="chips" id="f-who">
+      <button type="button" class="chip pablo" data-who="pablo">Pablo</button>
+      <button type="button" class="chip andrea" data-who="andrea">Andrea</button>
+      <button type="button" class="chip ambos" data-who="ambos">Ambos</button>
+    </div>
+    <label for="f-date">Fecha</label>
+    <input id="f-date" type="date" required>
+    <div class="row">
+      <div><label for="f-start">Inicio</label><input id="f-start" type="time" required></div>
+      <div><label for="f-end">Fin</label><input id="f-end" type="time" required></div>
+    </div>
+    <label for="f-freq">Repetir</label>
+    <select id="f-freq">
+      <option value="none">No se repite</option>
+      <option value="daily">Cada día</option>
+      <option value="weekly">Cada semana</option>
+      <option value="monthly">Cada mes</option>
+      <option value="yearly">Cada año</option>
+    </select>
+    <div id="repBox" class="hidden">
+      <label>Frecuencia</label>
+      <div class="every">Cada <input id="f-int" type="number" min="1" max="99" value="1"> <span id="f-unit">semana(s)</span></div>
+      <div id="wdBox">
+        <label>Días de la semana</label>
+        <div class="chips" id="f-wd"></div>
+      </div>
+      <label for="f-until">Hasta (opcional)</label>
+      <input id="f-until" type="date">
+    </div>
+    <div class="note hidden" id="serieNote">Los cambios y el borrado afectan a toda la serie.</div>
+    <div class="err" id="formErr"></div>
+    <div class="actions">
+      <button type="button" class="btn del hidden" id="btnDel">Borrar</button>
+      <button type="button" class="btn ghost" id="btnCancel">Cancelar</button>
+      <button type="submit" class="btn save" id="btnSave">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const DD = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const DL = ['L','M','X','J','V','S','D'];
+const MM = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const WHO = {pablo:'Pablo', andrea:'Andrea', ambos:'Ambos'};
+
+/* ---------- fechas (todo en hora local, sin UTC) ---------- */
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
+const dayNum = s => { const [y,m,d]=s.split('-').map(Number); return Date.UTC(y,m-1,d)/864e5; };
+const wd = s => (parse(s).getDay()+6)%7;               // 0 = lunes
+const addDays = (d,n) => { const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()+n); return x; };
+const mondayOf = d => addDays(d, -((d.getDay()+6)%7));
+const toMin = t => { const [h,m]=t.split(':'); return +h*60 + +m; };
+const hhmm = t => t.slice(0,5);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- recurrencia ---------- */
+function occurs(ev, ds){
+  const s = ev.start_date;
+  if (ds < s) return false;
+  if (ev.until_date && ds > ev.until_date) return false;
+  if (ev.freq === 'none') return ds === s;
+  const n = ev.interval_n || 1;
+  const dd = dayNum(ds) - dayNum(s);
+  if (ev.freq === 'daily') return dd % n === 0;
+  if (ev.freq === 'weekly'){
+    const wds = (ev.weekdays && ev.weekdays.length) ? ev.weekdays : [wd(s)];
+    if (!wds.includes(wd(ds))) return false;
+    const wk = Math.round(((dayNum(ds)-wd(ds)) - (dayNum(s)-wd(s))) / 7);
+    return wk % n === 0;
+  }
+  const [y1,m1,d1] = ds.split('-').map(Number), [y0,m0,d0] = s.split('-').map(Number);
+  if (ev.freq === 'monthly') return d1 === d0 && (((y1-y0)*12 + m1 - m0) % n === 0);
+  if (ev.freq === 'yearly')  return d1 === d0 && m1 === m0 && ((y1-y0) % n === 0);
+  return false;
+}
+
+/* ---------- solapes estilo Outlook ---------- */
+function layout(items){
+  items.sort((a,b) => a.start - b.start || b.end - a.end);
+  let cluster = [], clusterEnd = -1;
+  const flush = () => {
+    if (!cluster.length) return;
+    const cols = [];
+    cluster.forEach(it => {
+      let c = cols.findIndex(e => e <= it.start);
+      if (c < 0){ c = cols.length; cols.push(0); }
+      cols[c] = it.end; it.col = c;
+    });
+    cluster.forEach(it => it.n = cols.length);
+    cluster = [];
+  };
+  items.forEach(it => {
+    if (it.start >= clusterEnd){ flush(); clusterEnd = it.end; }
+    else clusterEnd = Math.max(clusterEnd, it.end);
+    cluster.push(it);
+  });
+  flush();
+  return items;
+}
+
+window.__agenda_logic = {occurs, layout, mondayOf, ymd, parse, dayNum, wd};  // para tests
+
+/* ---------- estado ---------- */
+const cfg = window.APP_CONFIG || {};
+const configured = cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('PEGA_AQUI');
+let sb = null, events = [], anchor = new Date(), editing = null;
+let view = 'week';
+try { view = localStorage.getItem('agenda_view') || 'week'; } catch(e){}
+const H = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--H')) || 46;
+
+/* ---------- auth ---------- */
+function showLogin(){ $('#login').classList.remove('hidden'); $('#app').classList.add('hidden'); $('#cfgwarn').classList.toggle('hidden', !!configured); }
+function showApp(){ $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); load(); }
+
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('#loginErr').textContent = '';
+  if (!configured){ $('#loginErr').textContent = 'Falta configurar config.js'; return; }
+  const { error } = await sb.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#pass').value });
+  if (error) $('#loginErr').textContent = 'Email o contraseña incorrectos.';
+});
+$('#logout').addEventListener('click', async () => { if (sb) await sb.auth.signOut(); });
+
+/* ---------- datos ---------- */
+async function load(){
+  if (!sb) return;
+  const { data, error } = await sb.from('events').select('*');
+  if (error){ console.error(error); return; }
+  events = data || [];
+  render();
+}
+
+/* ---------- render ---------- */
+function rangeDays(){
+  if (view === 'day') return [new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate())];
+  const m = mondayOf(anchor);
+  return [0,1,2,3,4,5,6].map(i => addDays(m,i));
+}
+
+function render(){
+  const days = rangeDays(), n = days.length, h = H(), todayS = ymd(new Date());
+  $('#vDay').classList.toggle('on', view==='day');
+  $('#vWeek').classList.toggle('on', view==='week');
+  $('#cal').classList.toggle('day-mode', view==='day');
+
+  // título
+  if (view==='day'){
+    const d = days[0]; $('#title').textContent = DD[(d.getDay()+6)%7] + ' ' + d.getDate() + ' ' + MM[d.getMonth()] + ' ' + d.getFullYear();
+  } else {
+    const a = days[0], b = days[6];
+    $('#title').textContent = a.getMonth()===b.getMonth()
+      ? a.getDate()+'–'+b.getDate()+' '+MM[b.getMonth()]+' '+b.getFullYear()
+      : a.getDate()+' '+MM[a.getMonth()]+' – '+b.getDate()+' '+MM[b.getMonth()]+' '+b.getFullYear();
+  }
+
+  // cabecera de días
+  $('#heads').innerHTML = '<div class="gut"></div>' + days.map(d => {
+    const s = ymd(d);
+    return `<div class="hd ${s===todayS?'today':''}" data-date="${s}"><small>${DD[(d.getDay()+6)%7]}</small><b>${d.getDate()}</b></div>`;
+  }).join('');
+
+  // rejilla
+  let gutter = '';
+  for (let i=1;i<24;i++) gutter += `<span style="top:${i*h}px">${i}:00</span>`;
+  let cols = '';
+  days.forEach(d => {
+    const s = ymd(d);
+    const items = events.filter(e => occurs(e, s)).map(e => ({ev:e, start:toMin(e.start_time), end:toMin(e.end_time)}));
+    layout(items);
+    let inner = items.map(it => {
+      const top = it.start*h/60, height = Math.max((it.end-it.start)*h/60, 20);
+      const w = 100/it.n, left = it.col*w;
+      const long = height >= 34;
+      return `<div class="ev ${it.ev.owner}" data-id="${it.ev.id}" style="top:${top}px;height:${height-1}px;left:calc(${left}% + 1px);width:calc(${w}% - 2px)">
+        <b>${esc(it.ev.title)}</b>${long?`<i>${hhmm(it.ev.start_time)}–${hhmm(it.ev.end_time)}</i>`:''}</div>`;
+    }).join('');
+    if (s===todayS){
+      const now = new Date(), top = (now.getHours()*60+now.getMinutes())*h/60;
+      inner += `<div class="nowline" style="top:${top}px"></div>`;
+    }
+    cols += `<div class="col ${s===todayS?'today':''}" data-date="${s}">${inner}</div>`;
+  });
+  $('#grid').style.height = (24*h)+'px';
+  $('#grid').innerHTML = `<div class="gutter">${gutter}</div><div class="cols" style="grid-template-columns:repeat(${n},1fr)">${cols}</div>`;
+}
+
+function scrollToWork(){
+  const h = H(), now = new Date();
+  const target = (anchorIsCurrent() ? Math.max(now.getHours()-2, 0) : 7) * h;
+  $('#scroll').scrollTop = target;
+}
+const anchorIsCurrent = () => {
+  const days = rangeDays().map(ymd); return days.includes(ymd(new Date()));
+};
+
+/* ---------- navegación ---------- */
+function shift(dir){
+  anchor = addDays(anchor, dir * (view==='day' ? 1 : 7));
+  render();
+}
+$('#prev').onclick = () => shift(-1);
+$('#next').onclick = () => shift(1);
+$('#today').onclick = () => { anchor = new Date(); render(); scrollToWork(); };
+function setView(v){ view = v; try{ localStorage.setItem('agenda_view', v); }catch(e){} render(); scrollToWork(); }
+$('#vDay').onclick = () => setView('day');
+$('#vWeek').onclick = () => setView('week');
+
+// swipe horizontal
+(function(){
+  let x0=0,y0=0,t0=0;
+  const el = $('#scroll');
+  el.addEventListener('touchstart', e => { const t=e.touches[0]; x0=t.clientX; y0=t.clientY; t0=Date.now(); }, {passive:true});
+  el.addEventListener('touchend', e => {
+    const t=e.changedTouches[0], dx=t.clientX-x0, dy=t.clientY-y0;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)*2 && Date.now()-t0 < 600){ shift(dx<0 ? 1 : -1); }
+  }, {passive:true});
+})();
+
+// toques en cabecera, eventos y huecos
+$('#heads').addEventListener('click', e => {
+  const hd = e.target.closest('.hd'); if (!hd) return;
+  if (view==='week'){ anchor = parse(hd.dataset.date); setView('day'); }
+});
+$('#grid').addEventListener('click', e => {
+  const evEl = e.target.closest('.ev');
+  if (evEl){ const ev = events.find(x => x.id === evEl.dataset.id); if (ev) openForm(ev); return; }
+  const col = e.target.closest('.col'); if (!col) return;
+  const y = e.clientY - col.getBoundingClientRect().top, hour = Math.min(Math.floor(y/H()), 22);
+  openForm(null, {date: col.dataset.date, start: pad(hour)+':00', end: pad(hour+1)+':00'});
+});
+$('#fab').onclick = () => {
+  const d = view==='day' ? anchor : (anchorIsCurrent() ? new Date() : mondayOf(anchor));
+  const h = Math.min(new Date().getHours()+1, 22);
+  openForm(null, {date: ymd(d), start: pad(h)+':00', end: pad(h+1)+':00'});
+};
+
+/* ---------- formulario ---------- */
+let formWho = 'ambos', formWds = [];
+const UNITS = {daily:'día(s)', weekly:'semana(s)', monthly:'mes(es)', yearly:'año(s)'};
+$('#f-wd').innerHTML = DL.map((l,i) => `<button type="button" class="chip wd" data-wd="${i}">${l}</button>`).join('');
+
+function setWho(w){
+  formWho = w;
+  document.querySelectorAll('#f-who .chip').forEach(c => c.classList.toggle('on', c.dataset.who===w));
+}
+function syncRepeat(){
+  const f = $('#f-freq').value;
+  $('#repBox').classList.toggle('hidden', f==='none');
+  $('#wdBox').classList.toggle('hidden', f!=='weekly');
+  $('#f-unit').textContent = UNITS[f] || '';
+  document.querySelectorAll('#f-wd .chip').forEach(c => c.classList.toggle('on', formWds.includes(+c.dataset.wd)));
+}
+function openForm(ev, defaults){
+  editing = ev;
+  $('#formErr').textContent = '';
+  $('#formTitle').textContent = ev ? 'Editar evento' : 'Nuevo evento';
+  $('#btnDel').classList.toggle('hidden', !ev);
+  $('#f-title').value = ev ? ev.title : '';
+  setWho(ev ? ev.owner : 'ambos');
+  $('#f-date').value = ev ? ev.start_date : defaults.date;
+  $('#f-start').value = ev ? hhmm(ev.start_time) : defaults.start;
+  $('#f-end').value = ev ? hhmm(ev.end_time) : defaults.end;
+  $('#f-freq').value = ev ? ev.freq : 'none';
+  $('#f-int').value = ev ? ev.interval_n : 1;
+  formWds = ev && ev.weekdays ? ev.weekdays.slice() : [];
+  $('#f-until').value = ev && ev.until_date ? ev.until_date : '';
+  $('#serieNote').classList.toggle('hidden', !(ev && ev.freq!=='none'));
+  syncRepeat();
+  $('#overlay').classList.remove('hidden');
+  if (!ev) setTimeout(() => $('#f-title').focus(), 50);
+}
+function closeForm(){ $('#overlay').classList.add('hidden'); editing = null; }
+
+document.querySelectorAll('#f-who .chip').forEach(c => c.onclick = () => setWho(c.dataset.who));
+$('#f-wd').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  const i = +c.dataset.wd;
+  formWds = formWds.includes(i) ? formWds.filter(x => x!==i) : formWds.concat(i);
+  syncRepeat();
+});
+$('#f-freq').onchange = () => {
+  if ($('#f-freq').value==='weekly' && !formWds.length && $('#f-date').value) formWds = [wd($('#f-date').value)];
+  syncRepeat();
+};
+$('#btnCancel').onclick = closeForm;
+$('#overlay').addEventListener('click', e => { if (e.target.id==='overlay') closeForm(); });
+
+$('#form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const title = $('#f-title').value.trim(), date = $('#f-date').value, st = $('#f-start').value, en = $('#f-end').value;
+  const freq = $('#f-freq').value, until = $('#f-until').value;
+  if (!title) return ($('#formErr').textContent = 'Pon un título.');
+  if (!date || !st || !en) return ($('#formErr').textContent = 'Completa fecha y horas.');
+  if (toMin(en) <= toMin(st)) return ($('#formErr').textContent = 'La hora de fin debe ser posterior a la de inicio.');
+  if (freq!=='none' && until && until < date) return ($('#formErr').textContent = 'La fecha final no puede ser anterior al inicio.');
+  const rec = {
+    title, owner: formWho, start_date: date, start_time: st, end_time: en, freq,
+    interval_n: Math.max(1, parseInt($('#f-int').value,10) || 1),
+    weekdays: freq==='weekly' && formWds.length ? formWds.slice().sort() : null,
+    until_date: freq!=='none' && until ? until : null
+  };
+  $('#btnSave').disabled = true;
+  const q = editing ? sb.from('events').update(rec).eq('id', editing.id) : sb.from('events').insert(rec);
+  const { error } = await q;
+  $('#btnSave').disabled = false;
+  if (error){ console.error(error); $('#formErr').textContent = 'No se pudo guardar. ¿Hay conexión?'; return; }
+  closeForm(); load();
+});
+$('#btnDel').onclick = async () => {
+  if (!editing) return;
+  const msg = editing.freq!=='none' ? '¿Borrar este evento y toda su serie?' : '¿Borrar este evento?';
+  if (!confirm(msg)) return;
+  const { error } = await sb.from('events').delete().eq('id', editing.id);
+  if (error){ $('#formErr').textContent = 'No se pudo borrar.'; return; }
+  closeForm(); load();
+};
+
+/* ---------- arranque ---------- */
+async function start(){
+  if (!configured || !window.supabase){ showLogin(); return; }
+  sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  sb.auth.onAuthStateChange((ev, session) => { session ? showApp() : showLogin(); if (session) setTimeout(scrollToWork, 100); });
+  const { data } = await sb.auth.getSession();
+  if (!data.session) showLogin();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && sb && !$('#app').classList.contains('hidden')) load(); });
+setInterval(() => { if (sb && !$('#app').classList.contains('hidden') && !document.hidden) render(); }, 60000);
+if (typeof document !== 'undefined' && !window.__TEST__) start();
+})();
+</script>
+</body>
+</html>
