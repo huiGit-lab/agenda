@@ -15,7 +15,7 @@
 :root{
   --bg:#f3ebe0; --card:#fffdf9; --line:#e6dccd; --text:#2b2620; --muted:#8a7f70; --accent:#2b2620;
   --pablo:#7c3aed; --pablo-bg:#e9defc;
-  --andrea:#2563eb; --andrea-bg:#dbe8ff;
+  --andrea:#db2777; --andrea-bg:#fde0ee;
   --ambos:#15803d; --ambos-bg:#d9f2e0;
   --H:46px;
 }
@@ -64,16 +64,29 @@ input,select{font-size:16px}
 .col.today{background-color:#fbf6ec}
 .ev{position:absolute;border-radius:6px;padding:2px 4px;overflow:hidden;font-size:11px;line-height:1.2;
   background:var(--bg-c);border-left:3px solid var(--c);color:var(--text);cursor:pointer}
-.ev.pablo{--c:var(--pablo);--bg-c:var(--pablo-bg)}
-.ev.andrea{--c:var(--andrea);--bg-c:var(--andrea-bg)}
-.ev.ambos{--c:var(--ambos);--bg-c:var(--ambos-bg)}
+.ev.pablo,.chipad.pablo{--c:var(--pablo);--bg-c:var(--pablo-bg)}
+.ev.andrea,.chipad.andrea{--c:var(--andrea);--bg-c:var(--andrea-bg)}
+.ev.ambos,.chipad.ambos{--c:var(--ambos);--bg-c:var(--ambos-bg)}
+.heads .hd .wx{display:block;font-size:10px;color:var(--muted);line-height:1.1;margin-top:2px;white-space:nowrap}
+.heads .hd .wx em{font-style:normal;font-size:14px;line-height:1.1}
+.allday{display:flex;border-bottom:1px solid var(--line);padding:3px 0 4px}
+.allday .gut{width:34px;flex:none;font-size:9px;line-height:1.1;color:var(--muted);text-align:right;padding:3px 4px 0 0}
+.allday .ad{flex:1;min-width:0;padding:0 1px;display:flex;flex-direction:column;gap:2px}
+.chipad{border-radius:5px;padding:1px 2px 1px 3px;font-size:10px;line-height:1.3;background:var(--bg-c);border-left:2px solid var(--c);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer}
+.day-mode .chipad{font-size:13px;padding:3px 8px;white-space:normal;border-left-width:3px}
+.sheet label.chk{display:flex;align-items:center;gap:10px;text-transform:none;letter-spacing:0;font-size:15px;color:var(--text);margin-top:14px}
+.sheet label.chk input{width:20px;height:20px;margin:0}
+.actions.stack{flex-direction:column}
+.actions.stack .btn{flex:none}
 .ev b{display:block;font-weight:600;word-break:break-word}
 .ev i{display:block;font-style:normal;font-size:10px;opacity:.75}
-.day-mode .ev{font-size:14px;padding:4px 8px}
-.day-mode .ev i{font-size:12px}
+.day-mode .ev{font-size:13px;padding:3px 8px}
+.day-mode .ev i{font-size:11px}
 .nowline{position:absolute;left:0;right:0;height:0;border-top:2px solid #ef4444;z-index:3;pointer-events:none}
 .nowline::before{content:"";position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:#ef4444}
 .legend{display:flex;gap:14px;justify-content:center;padding:7px 0 9px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+.legend{flex-wrap:wrap;row-gap:3px}
+.legend .credit{flex-basis:100%;text-align:center;font-size:9px;color:var(--muted);opacity:.7;text-decoration:none}
 .legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;background:var(--c)}
 .legend .p{--c:var(--pablo)}.legend .a{--c:var(--andrea)}.legend .b{--c:var(--ambos)}
 .fab{position:fixed;right:18px;bottom:calc(66px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:27px;border:0;background:var(--accent);color:#fff;font-size:28px;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer;z-index:10}
@@ -132,8 +145,10 @@ input,select{font-size:16px}
   </div>
   <div class="cal" id="cal">
     <div class="heads" id="heads"></div>
+    <div class="allday hidden" id="allday"></div>
     <div class="scroll" id="scroll"><div class="grid" id="grid"></div></div>
-    <div class="legend"><span class="p">Pablo</span><span class="a">Andrea</span><span class="b">Ambos</span></div>
+    <div class="legend"><span class="p">Pablo</span><span class="a">Andrea</span><span class="b">Ambos</span>
+      <a class="credit" href="https://open-meteo.com/" target="_blank" rel="noopener">Datos del tiempo: Open-Meteo.com</a></div>
   </div>
   <button class="fab" id="fab" aria-label="Nuevo evento">+</button>
 </div>
@@ -151,9 +166,10 @@ input,select{font-size:16px}
     </div>
     <label for="f-date">Fecha</label>
     <input id="f-date" type="date" required>
-    <div class="row">
-      <div><label for="f-start">Inicio</label><input id="f-start" type="time" required></div>
-      <div><label for="f-end">Fin</label><input id="f-end" type="time" required></div>
+    <label class="chk"><input type="checkbox" id="f-all"> Todo el día</label>
+    <div class="row" id="timeRow">
+      <div><label for="f-start">Inicio</label><input id="f-start" type="time"></div>
+      <div><label for="f-end">Fin</label><input id="f-end" type="time"></div>
     </div>
     <label for="f-freq">Repetir</label>
     <select id="f-freq">
@@ -173,7 +189,7 @@ input,select{font-size:16px}
       <label for="f-until">Hasta (opcional)</label>
       <input id="f-until" type="date">
     </div>
-    <div class="note hidden" id="serieNote">Los cambios y el borrado afectan a toda la serie.</div>
+    <div class="note hidden" id="serieNote">Los cambios afectan a toda la serie. Al borrar podrás elegir solo este día.</div>
     <div class="err" id="formErr"></div>
     <div class="actions">
       <button type="button" class="btn del hidden" id="btnDel">Borrar</button>
@@ -183,7 +199,19 @@ input,select{font-size:16px}
   </form>
 </div>
 
-<script src="config.js?v=3"></script>
+<div id="delOverlay" class="overlay hidden">
+  <div class="sheet">
+    <h2>Borrar evento repetido</h2>
+    <div class="note" id="delInfo" style="margin:0 0 6px"></div>
+    <div class="actions stack">
+      <button type="button" class="btn del" id="delOne">Solo este día</button>
+      <button type="button" class="btn del" id="delAll">Toda la serie</button>
+      <button type="button" class="btn ghost" id="delCancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
@@ -211,6 +239,7 @@ function occurs(ev, ds){
   const s = ev.start_date;
   if (ds < s) return false;
   if (ev.until_date && ds > ev.until_date) return false;
+  if (ev.exdates && ev.exdates.includes(ds)) return false;   // ocurrencias borradas una a una
   if (ev.freq === 'none') return ds === s;
   const n = ev.interval_n || 1;
   const dd = dayNum(ds) - dayNum(s);
@@ -260,11 +289,57 @@ let sb = null, events = [], anchor = new Date(), editing = null;
 let view = 'week';
 try { view = localStorage.getItem('agenda_view') || 'week'; } catch(e){}
 const START_H = 6, END_H = 23;   // la rejilla va de 06:00 a 23:00
-const H = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--H')) || 46;
+let HH = 46;                      // alto en px de cada hora (se ajusta para que el día quepa en pantalla)
+const H = () => HH;
+function fitHeight(){
+  const avail = $('#scroll').clientHeight - 10;        // 10 = padding inferior del contenedor
+  if (avail > 150) HH = Math.floor(Math.max(24, Math.min(avail/(END_H-START_H), 64)));
+  document.documentElement.style.setProperty('--H', HH+'px');
+}
+
+/* ---------- tiempo (Open-Meteo: gratis y sin clave) ---------- */
+const WX = {};
+let wxAt = 0;
+function wxIcon(c){
+  if (c===0) return '☀️';
+  if (c===1) return '🌤️';
+  if (c===2) return '⛅';
+  if (c===3) return '☁️';
+  if (c===45 || c===48) return '🌫️';
+  if ((c>=51 && c<=55) || c===80) return '🌦️';
+  if ((c>=56 && c<=67) || c===81 || c===82) return '🌧️';
+  if ((c>=71 && c<=77) || c===85 || c===86) return '🌨️';
+  if (c>=95) return '⛈️';
+  return '🌡️';
+}
+async function wxCoords(){
+  const city = String(cfg.WEATHER_CITY || '').trim();
+  if (!city) return { lat: 40.4168, lon: -3.7038 };      // Madrid por defecto
+  const key = 'agenda_geo_' + city.toLowerCase();
+  try { const c = JSON.parse(localStorage.getItem(key)); if (c && c.lat) return c; } catch(e){}
+  const r = await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=es&name=' + encodeURIComponent(city));
+  const j = await r.json();
+  if (!j.results || !j.results.length) return null;
+  const c = { lat: j.results[0].latitude, lon: j.results[0].longitude };
+  try { localStorage.setItem(key, JSON.stringify(c)); } catch(e){}
+  return c;
+}
+async function loadWeather(){
+  if (Date.now() - wxAt < 3600e3) return;                 // como mucho 1 vez por hora
+  try {
+    const c = await wxCoords(); if (!c) return;
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + c.lat + '&longitude=' + c.lon +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&past_days=7&forecast_days=16');
+    if (!r.ok) return;
+    const j = await r.json(), d = j.daily;
+    d.time.forEach((t,i) => { WX[t] = { code: d.weather_code[i], max: d.temperature_2m_max[i], min: d.temperature_2m_min[i] }; });
+    wxAt = Date.now(); render();
+  } catch(e){ console.warn('Tiempo no disponible', e); }
+}
 
 /* ---------- auth ---------- */
 function showLogin(){ $('#login').classList.remove('hidden'); $('#app').classList.add('hidden'); $('#cfgwarn').classList.toggle('hidden', !!configured); }
-function showApp(){ $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); load(); }
+function showApp(){ $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); load(); loadWeather(); }
 
 $('#loginForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -298,14 +373,14 @@ function rangeDays(){
 }
 
 function render(){
-  const days = rangeDays(), n = days.length, h = H(), todayS = ymd(new Date());
+  const days = rangeDays(), n = days.length, todayS = ymd(new Date());
   $('#vDay').classList.toggle('on', view==='day');
   $('#vWeek').classList.toggle('on', view==='week');
   $('#cal').classList.toggle('day-mode', view==='day');
 
   // título
   if (view==='day'){
-    const d = days[0]; $('#title').textContent = DD[(d.getDay()+6)%7] + ' ' + d.getDate() + ' ' + MM[d.getMonth()] + ' ' + d.getFullYear();
+    const d = days[0]; $('#title').textContent = DD[(d.getDay()+6)%7] + ' ' + d.getDate() + ' ' + MM[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '');
   } else {
     const a = days[0], b = days[6];
     $('#title').textContent = a.getMonth()===b.getMonth()
@@ -315,9 +390,22 @@ function render(){
 
   // cabecera de días
   $('#heads').innerHTML = '<div class="gut"></div>' + days.map(d => {
-    const s = ymd(d);
-    return `<div class="hd ${s===todayS?'today':''}" data-date="${s}"><small>${DD[(d.getDay()+6)%7]}</small><b>${d.getDate()}</b></div>`;
+    const s = ymd(d), w = WX[s];
+    const wx = w ? `<span class="wx"><em>${wxIcon(w.code)}</em><br>${Math.round(w.max)}°/${Math.round(w.min)}°</span>` : '';
+    return `<div class="hd ${s===todayS?'today':''}" data-date="${s}"><small>${DD[(d.getDay()+6)%7]}</small><b>${d.getDate()}</b>${wx}</div>`;
   }).join('');
+
+  // franja "todo el día"
+  const adEl = $('#allday');
+  const adDays = days.map(d => { const s = ymd(d); return {s, list: events.filter(e => e.all_day && occurs(e, s))}; });
+  const adAny = adDays.some(x => x.list.length);
+  adEl.classList.toggle('hidden', !adAny);
+  adEl.innerHTML = adAny ? '<div class="gut">todo<br>el día</div>' + adDays.map(x =>
+    '<div class="ad">' + x.list.map(e => `<div class="chipad ${e.owner}" data-id="${e.id}" data-date="${x.s}">${esc(e.title)}</div>`).join('') + '</div>'
+  ).join('') : '';
+
+  fitHeight();               // con cabecera y franja ya pintadas, calculamos cuánto mide cada hora
+  const h = H();
 
   // rejilla
   let gutter = '';
@@ -326,7 +414,7 @@ function render(){
   days.forEach(d => {
     const s = ymd(d);
     const S = START_H*60, E = END_H*60;
-    const items = events.filter(e => occurs(e, s))
+    const items = events.filter(e => !e.all_day && occurs(e, s))
       .map(e => ({ev:e, start:toMin(e.start_time), end:toMin(e.end_time)}))
       .filter(it => it.end > S && it.start < E);   // fuera de 06–23 no se dibuja
     layout(items);
@@ -334,7 +422,7 @@ function render(){
       const vs = Math.max(it.start, S), ve = Math.min(it.end, E);
       const top = (vs-S)*h/60, height = Math.max((ve-vs)*h/60, 20);
       const w = 100/it.n, left = it.col*w;
-      const long = height >= 34;
+      const long = height >= (view==='day' ? 38 : 28);
       return `<div class="ev ${it.ev.owner}" data-id="${it.ev.id}" style="top:${top}px;height:${height-1}px;left:calc(${left}% + 1px);width:calc(${w}% - 2px)">
         <b>${esc(it.ev.title)}</b>${long?`<i>${hhmm(it.ev.start_time)}–${hhmm(it.ev.end_time)}</i>`:''}</div>`;
     }).join('');
@@ -387,10 +475,14 @@ $('#heads').addEventListener('click', e => {
 });
 $('#grid').addEventListener('click', e => {
   const evEl = e.target.closest('.ev');
-  if (evEl){ const ev = events.find(x => x.id === evEl.dataset.id); if (ev) openForm(ev); return; }
+  if (evEl){ const ev = events.find(x => x.id === evEl.dataset.id); if (ev) openForm(ev, null, evEl.closest('.col').dataset.date); return; }
   const col = e.target.closest('.col'); if (!col) return;
   const y = e.clientY - col.getBoundingClientRect().top, hour = Math.min(START_H + Math.floor(y/H()), END_H-1);
   openForm(null, {date: col.dataset.date, start: pad(hour)+':00', end: pad(hour+1)+':00'});
+});
+$('#allday').addEventListener('click', e => {
+  const c = e.target.closest('.chipad'); if (!c) return;
+  const ev = events.find(x => x.id === c.dataset.id); if (ev) openForm(ev, null, c.dataset.date);
 });
 $('#fab').onclick = () => {
   const d = view==='day' ? anchor : (anchorIsCurrent() ? new Date() : mondayOf(anchor));
@@ -414,16 +506,21 @@ function syncRepeat(){
   $('#f-unit').textContent = UNITS[f] || '';
   document.querySelectorAll('#f-wd .chip').forEach(c => c.classList.toggle('on', formWds.includes(+c.dataset.wd)));
 }
-function openForm(ev, defaults){
-  editing = ev;
+let occDate = null;     // fecha concreta de la ocurrencia tocada (para borrar solo esa)
+function syncAll(){ $('#timeRow').classList.toggle('hidden', $('#f-all').checked); }
+$('#f-all').onchange = syncAll;
+function openForm(ev, defaults, occ){
+  editing = ev; occDate = occ || (ev ? ev.start_date : null);
   $('#formErr').textContent = '';
   $('#formTitle').textContent = ev ? 'Editar evento' : 'Nuevo evento';
   $('#btnDel').classList.toggle('hidden', !ev);
   $('#f-title').value = ev ? ev.title : '';
   setWho(ev ? ev.owner : 'ambos');
   $('#f-date').value = ev ? ev.start_date : defaults.date;
-  $('#f-start').value = ev ? hhmm(ev.start_time) : defaults.start;
-  $('#f-end').value = ev ? hhmm(ev.end_time) : defaults.end;
+  $('#f-all').checked = !!(ev && ev.all_day);
+  $('#f-start').value = ev ? (ev.all_day ? '09:00' : hhmm(ev.start_time)) : defaults.start;
+  $('#f-end').value = ev ? (ev.all_day ? '10:00' : hhmm(ev.end_time)) : defaults.end;
+  syncAll();
   $('#f-freq').value = ev ? ev.freq : 'none';
   $('#f-int').value = ev ? ev.interval_n : 1;
   formWds = ev && ev.weekdays ? ev.weekdays.slice() : [];
@@ -454,12 +551,13 @@ $('#form').addEventListener('submit', async e => {
   const title = $('#f-title').value.trim(), date = $('#f-date').value, st = $('#f-start').value, en = $('#f-end').value;
   const freq = $('#f-freq').value, until = $('#f-until').value;
   if (!title) return ($('#formErr').textContent = 'Pon un título.');
-  if (!date || !st || !en) return ($('#formErr').textContent = 'Completa fecha y horas.');
-  if (toMin(en) <= toMin(st)) return ($('#formErr').textContent = 'La hora de fin debe ser posterior a la de inicio.');
-  if (toMin(st) < START_H*60 || toMin(en) > END_H*60) return ($('#formErr').textContent = 'El horario va de '+pad(START_H)+':00 a '+END_H+':00.');
+  const allDay = $('#f-all').checked;
+  if (!date || (!allDay && (!st || !en))) return ($('#formErr').textContent = 'Completa fecha y horas.');
+  if (!allDay && toMin(en) <= toMin(st)) return ($('#formErr').textContent = 'La hora de fin debe ser posterior a la de inicio.');
+  if (!allDay && (toMin(st) < START_H*60 || toMin(en) > END_H*60)) return ($('#formErr').textContent = 'El horario va de '+pad(START_H)+':00 a '+END_H+':00.');
   if (freq!=='none' && until && until < date) return ($('#formErr').textContent = 'La fecha final no puede ser anterior al inicio.');
   const rec = {
-    title, owner: formWho, start_date: date, start_time: st, end_time: en, freq,
+    title, owner: formWho, start_date: date, start_time: allDay ? '00:00' : st, end_time: allDay ? '23:59' : en, all_day: allDay, freq,
     interval_n: Math.max(1, parseInt($('#f-int').value,10) || 1),
     weekdays: freq==='weekly' && formWds.length ? formWds.slice().sort() : null,
     until_date: freq!=='none' && until ? until : null
@@ -471,14 +569,31 @@ $('#form').addEventListener('submit', async e => {
   if (error){ console.error(error); $('#formErr').textContent = 'No se pudo guardar. ¿Hay conexión?'; return; }
   closeForm(); load();
 });
-$('#btnDel').onclick = async () => {
-  if (!editing) return;
-  const msg = editing.freq!=='none' ? '¿Borrar este evento y toda su serie?' : '¿Borrar este evento?';
-  if (!confirm(msg)) return;
+function closeDel(){ $('#delOverlay').classList.add('hidden'); }
+async function deleteAll(){
   const { error } = await sb.from('events').delete().eq('id', editing.id);
+  closeDel();
   if (error){ $('#formErr').textContent = 'No se pudo borrar.'; return; }
   closeForm(); load();
+}
+async function deleteOne(){
+  const ex = (editing.exdates || []).concat(occDate);
+  const { error } = await sb.from('events').update({ exdates: ex }).eq('id', editing.id);
+  closeDel();
+  if (error){ $('#formErr').textContent = 'No se pudo borrar.'; return; }
+  closeForm(); load();
+}
+$('#btnDel').onclick = () => {
+  if (!editing) return;
+  if (editing.freq === 'none'){ if (confirm('¿Borrar este evento?')) deleteAll(); return; }
+  const d = parse(occDate);
+  $('#delInfo').textContent = '«' + editing.title + '» · ' + DD[(d.getDay()+6)%7] + ' ' + d.getDate() + ' ' + MM[d.getMonth()];
+  $('#delOverlay').classList.remove('hidden');
 };
+$('#delOne').onclick = deleteOne;
+$('#delAll').onclick = deleteAll;
+$('#delCancel').onclick = closeDel;
+$('#delOverlay').addEventListener('click', e => { if (e.target.id==='delOverlay') closeDel(); });
 
 /* ---------- arranque ---------- */
 async function start(){
@@ -492,7 +607,8 @@ async function start(){
   const { data } = await sb.auth.getSession();
   if (!data.session) showLogin();
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && sb && !$('#app').classList.contains('hidden')) load(); });
+let rzT; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { if (sb && !$('#app').classList.contains('hidden')) render(); }, 150); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && sb && !$('#app').classList.contains('hidden')){ load(); loadWeather(); } });
 setInterval(() => { if (sb && !$('#app').classList.contains('hidden') && !document.hidden) render(); }, 60000);
 if (typeof document !== 'undefined' && !window.__TEST__) start();
 })();
