@@ -61,7 +61,11 @@ input,select{font-size:16px}
 .cols{flex:1;display:grid}
 .col{position:relative;border-left:1px solid var(--line);
   background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--H) - 1px),var(--line) calc(var(--H) - 1px),var(--line) var(--H))}
+.col.we{background-color:#f4ecde}
 .col.today{background-color:#fbf6ec}
+.hd.we,.ad.we{background:#f4ecde}
+.col.sep{border-left-color:#c9b99d;box-shadow:inset 2px 0 0 #c9b99d}
+.hd.sep,.ad.sep{box-shadow:inset 3px 0 0 #c9b99d}
 .ev{position:absolute;border-radius:6px;padding:2px 4px;overflow:hidden;font-size:11px;line-height:1.2;
   background:var(--bg-c);border-left:3px solid var(--c);color:var(--text);cursor:pointer}
 .ev.pablo,.chipad.pablo{--c:var(--pablo);--bg-c:var(--pablo-bg)}
@@ -69,9 +73,9 @@ input,select{font-size:16px}
 .ev.ambos,.chipad.ambos{--c:var(--ambos);--bg-c:var(--ambos-bg)}
 .heads .hd .wx{display:block;font-size:10px;color:var(--muted);line-height:1.1;margin-top:2px;white-space:nowrap}
 .heads .hd .wx em{font-style:normal;font-size:14px;line-height:1.1}
-.allday{display:flex;border-bottom:1px solid var(--line);padding:3px 0 4px}
-.allday .gut{width:34px;flex:none;font-size:9px;line-height:1.1;color:var(--muted);text-align:right;padding:3px 4px 0 0}
-.allday .ad{flex:1;min-width:0;padding:0 1px;display:flex;flex-direction:column;gap:2px}
+.allday{display:flex;border-bottom:1px solid var(--line)}
+.allday .gut{width:34px;flex:none;font-size:9px;line-height:1.1;color:var(--muted);text-align:right;padding:6px 4px 0 0}
+.allday .ad{flex:1;min-width:0;padding:3px 1px 4px;display:flex;flex-direction:column;gap:2px}
 .chipad{border-radius:5px;padding:1px 2px 1px 3px;font-size:10px;line-height:1.3;background:var(--bg-c);border-left:2px solid var(--c);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer}
 .day-mode .chipad{font-size:13px;padding:3px 8px;white-space:normal;border-left-width:3px}
 .sheet label.chk{display:flex;align-items:center;gap:10px;text-transform:none;letter-spacing:0;font-size:15px;color:var(--text);margin-top:14px}
@@ -372,6 +376,9 @@ function rangeDays(){
   return [0,1,2,3,4,5,6].map(i => addDays(m,i));
 }
 
+// clases de fin de semana (sáb y dom) y línea gruesa antes del sábado (solo en vista semana)
+function wkCls(d){ const w = (d.getDay()+6)%7; return (w>=5 ? ' we' : '') + (view==='week' && w===5 ? ' sep' : ''); }
+
 function render(){
   const days = rangeDays(), n = days.length, todayS = ymd(new Date());
   $('#vDay').classList.toggle('on', view==='day');
@@ -392,16 +399,16 @@ function render(){
   $('#heads').innerHTML = '<div class="gut"></div>' + days.map(d => {
     const s = ymd(d), w = WX[s];
     const wx = w ? `<span class="wx"><em>${wxIcon(w.code)}</em><br>${Math.round(w.max)}°/${Math.round(w.min)}°</span>` : '';
-    return `<div class="hd ${s===todayS?'today':''}" data-date="${s}"><small>${DD[(d.getDay()+6)%7]}</small><b>${d.getDate()}</b>${wx}</div>`;
+    return `<div class="hd ${s===todayS?'today':''}${wkCls(d)}" data-date="${s}"><small>${DD[(d.getDay()+6)%7]}</small><b>${d.getDate()}</b>${wx}</div>`;
   }).join('');
 
   // franja "todo el día"
   const adEl = $('#allday');
-  const adDays = days.map(d => { const s = ymd(d); return {s, list: events.filter(e => e.all_day && occurs(e, s))}; });
+  const adDays = days.map(d => { const s = ymd(d); return {s, d, list: events.filter(e => e.all_day && occurs(e, s))}; });
   const adAny = adDays.some(x => x.list.length);
   adEl.classList.toggle('hidden', !adAny);
   adEl.innerHTML = adAny ? '<div class="gut">todo<br>el día</div>' + adDays.map(x =>
-    '<div class="ad">' + x.list.map(e => `<div class="chipad ${e.owner}" data-id="${e.id}" data-date="${x.s}">${esc(e.title)}</div>`).join('') + '</div>'
+    '<div class="ad' + wkCls(x.d) + '">' + x.list.map(e => `<div class="chipad ${e.owner}" data-id="${e.id}" data-date="${x.s}">${esc(e.title)}</div>`).join('') + '</div>'
   ).join('') : '';
 
   fitHeight();               // con cabecera y franja ya pintadas, calculamos cuánto mide cada hora
@@ -430,7 +437,7 @@ function render(){
       const now = new Date(), nm = now.getHours()*60+now.getMinutes();
       if (nm >= S && nm <= E) inner += `<div class="nowline" style="top:${(nm-S)*h/60}px"></div>`;
     }
-    cols += `<div class="col ${s===todayS?'today':''}" data-date="${s}">${inner}</div>`;
+    cols += `<div class="col ${s===todayS?'today':''}${wkCls(d)}" data-date="${s}">${inner}</div>`;
   });
   $('#grid').style.height = ((END_H-START_H)*h)+'px';
   $('#grid').innerHTML = `<div class="gutter">${gutter}</div><div class="cols" style="grid-template-columns:repeat(${n},1fr)">${cols}</div>`;
