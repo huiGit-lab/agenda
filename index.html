@@ -89,6 +89,13 @@ input,select{font-size:16px}
 .nowline{position:absolute;left:0;right:0;height:0;border-top:2px solid #ef4444;z-index:3;pointer-events:none}
 .nowline::before{content:"";position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:#ef4444}
 .legend{display:flex;gap:14px;justify-content:center;padding:7px 0 9px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+.range{padding:0 16px 5px;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--muted);text-align:center;white-space:nowrap}
+.yr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+#yLabel{font-size:22px;font-weight:700}
+.months{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mbtn{border:2px solid var(--line);background:#fff;border-radius:14px;padding:16px 0;font-weight:600;font-size:16px;cursor:pointer}
+.mbtn.now{border-color:var(--accent)}
+.mbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .legend{flex-wrap:wrap;row-gap:3px}
 .legend .credit{flex-basis:100%;text-align:center;font-size:9px;color:var(--muted);opacity:.7;text-decoration:none}
 .legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;background:var(--c)}
@@ -142,11 +149,15 @@ input,select{font-size:16px}
   <div class="top">
     <button class="ib" id="prev" aria-label="Anterior">‹</button>
     <button class="ib" id="next" aria-label="Siguiente">›</button>
-    <div class="title" id="title"></div>
+    <button class="ib" id="monthBtn" aria-label="Ir a un mes o año" title="Ir a un mes o año">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+    </button>
+    <div style="flex:1"></div>
     <button class="pill" id="today">Hoy</button>
     <div class="seg"><button id="vDay">Día</button><button id="vWeek">Semana</button></div>
     <button class="ib" id="logout" aria-label="Salir" title="Cerrar sesión">⎋</button>
   </div>
+  <div class="range" id="title"></div>
   <div class="cal" id="cal">
     <div class="heads" id="heads"></div>
     <div class="allday hidden" id="allday"></div>
@@ -201,6 +212,18 @@ input,select{font-size:16px}
       <button type="submit" class="btn save" id="btnSave">Guardar</button>
     </div>
   </form>
+</div>
+
+<div id="monthOverlay" class="overlay hidden">
+  <div class="sheet">
+    <div class="yr">
+      <button type="button" class="ib" id="yPrev" aria-label="Año anterior">‹</button>
+      <div id="yLabel"></div>
+      <button type="button" class="ib" id="yNext" aria-label="Año siguiente">›</button>
+    </div>
+    <div class="months" id="months"></div>
+    <button type="button" class="btn ghost" id="monthClose" style="width:100%;margin-top:16px">Cerrar</button>
+  </div>
 </div>
 
 <div id="delOverlay" class="overlay hidden">
@@ -461,6 +484,36 @@ $('#prev').onclick = () => shift(-1);
 $('#next').onclick = () => shift(1);
 $('#today').onclick = () => { anchor = new Date(); render(); scrollToWork(); };
 function setView(v){ view = v; try{ localStorage.setItem('agenda_view', v); }catch(e){} render(); scrollToWork(); }
+/* ---------- selector rápido de mes y año ---------- */
+const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+let popYear = new Date().getFullYear();
+// "Primera semana" del mes: la semana (lun-dom) con la mayoría de sus días en ese mes.
+// Si el día 1 cae de lunes a jueves, es la semana que lo contiene; si cae de viernes a domingo, la siguiente.
+function weekStartForMonth(y, m){
+  const f = new Date(y, m, 1), dow = (f.getDay()+6)%7;
+  return addDays(f, dow >= 4 ? 7 - dow : -dow);
+}
+const shownRef = () => view==='day' ? anchor : addDays(mondayOf(anchor), 3);
+function renderMonths(){
+  const ref = shownRef(), now = new Date();
+  $('#yLabel').textContent = popYear;
+  $('#months').innerHTML = MONTHS.map((n,i) =>
+    `<button type="button" class="mbtn${ref.getFullYear()===popYear && ref.getMonth()===i ? ' on':''}${now.getFullYear()===popYear && now.getMonth()===i ? ' now':''}" data-m="${i}">${n}</button>`
+  ).join('');
+}
+const closeMonths = () => $('#monthOverlay').classList.add('hidden');
+$('#monthBtn').onclick = () => { popYear = shownRef().getFullYear(); renderMonths(); $('#monthOverlay').classList.remove('hidden'); };
+$('#yPrev').onclick = () => { popYear = Math.max(2000, popYear-1); renderMonths(); };
+$('#yNext').onclick = () => { popYear = Math.min(2100, popYear+1); renderMonths(); };
+$('#monthClose').onclick = closeMonths;
+$('#monthOverlay').addEventListener('click', e => { if (e.target.id==='monthOverlay') closeMonths(); });
+$('#months').addEventListener('click', e => {
+  const b = e.target.closest('.mbtn'); if (!b) return;
+  const m = +b.dataset.m;
+  anchor = view==='day' ? new Date(popYear, m, 1) : weekStartForMonth(popYear, m);
+  closeMonths(); render(); scrollToWork();
+});
+
 $('#vDay').onclick = () => setView('day');
 $('#vWeek').onclick = () => setView('week');
 
